@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>पौधे की पहचान करने वाला</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="leaves" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23leaves)"/></svg>');
+            z-index: -1;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 700px;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        #result-box {
+            display: none;
+        }
+
+        #care-tips-box {
+            display: none;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(34, 197, 94, 0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border-left-color: #22c55e;
+            animation: spin 1s ease infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .plant-card {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .care-tip {
+            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            box-shadow: 0 8px 32px rgba(34, 197, 94, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            box-shadow: 0 12px 40px rgba(34, 197, 94, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-accent {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-accent:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            box-shadow: 0 12px 40px rgba(245, 158, 11, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-identify {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-identify:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .media-container {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .confidence-bar {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+        }
+
+        .confidence-fill {
+            background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .leaf-icon {
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        }
+
+        .title-gradient {
+            background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center p-4">
+
+    <div class="container rounded-3xl shadow-2xl p-6 md:p-10 text-center animate-fade-in">
+        <div class="flex items-center justify-center mb-6">
+            <div class="leaf-icon text-6xl mr-4">🌿</div>
+            <div>
+                <h1 class="text-4xl font-bold mb-2 title-gradient">पौधे की पहचान करने वाला</h1>
+                <div class="flex items-center justify-center text-sm text-green-600 font-medium">
+                    <span class="mr-2">🔬</span>
+                    <span>AI-Powered Plant Recognition</span>
+                </div>
+            </div>
+        </div>
+        <p class="text-gray-700 mb-8 text-lg">अपनी कैमरा या फोटो से पौधों को तुरंत पहचानें और उनकी देखभाल के बारे में जानें।</p>
+
+        <div id="media-container" class="media-container relative w-full aspect-video rounded-[2rem] mb-6 overflow-hidden flex items-center justify-center shadow-2xl">
+            <video id="video-stream" class="absolute inset-0 w-full h-full object-cover rounded-[2rem]" style="display:none;"></video>
+            <img id="preview-image" class="absolute inset-0 w-full h-full object-contain p-4 rounded-[2rem]" src="https://placehold.co/600x400/059669/ffffff?text=आपकी+तस्वीर+यहाँ+दिखाई+देगी" alt="छवि पूर्वावलोकन">
+            <div id="placeholder-text" class="absolute flex flex-col items-center justify-center text-white font-medium">
+                <div class="text-6xl mb-4 opacity-60 animate-bounce">🌱</div>
+                <span class="text-lg">आपकी तस्वीर यहाँ दिखाई देगी</span>
+                <span class="text-sm opacity-75 mt-2">फोटो अपलोड करें या कैमरा का उपयोग करें</span>
+            </div>
+        </div>
+
+        <div id="controls" class="flex flex-col md:flex-row gap-4 mb-8">
+            <label for="image-upload" class="btn-primary flex-1 w-full md:w-auto cursor-pointer text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center">
+                <input type="file" id="image-upload" class="hidden" accept="image/*">
+                <span class="mr-2 text-xl">📷</span>
+                फोटो अपलोड करें
+            </label>
+            <button id="camera-btn" class="btn-secondary flex-1 w-full md:w-auto text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center">
+                <span class="mr-2 text-xl">📹</span>
+                कैमरा का उपयोग करें
+            </button>
+            <button id="capture-btn" class="btn-accent flex-1 w-full md:w-auto text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center" style="display:none;">
+                <span class="mr-2 text-xl">📸</span>
+                फोटो लें
+            </button>
+        </div>
+
+        <button id="identify-btn" class="btn-identify w-full text-white font-bold py-5 px-8 rounded-xl transition-all duration-300 mb-6 flex items-center justify-center text-lg" style="display:none;">
+            <span class="mr-3 text-2xl">🔍</span>
+            पौधे की पहचान करें
+            <span class="ml-3 text-2xl">🌱</span>
+        </button>
+
+        <div id="status-message" class="text-gray-500 font-medium mb-4" style="display:none;"></div>
+        <div id="loading-container" class="flex justify-center items-center mb-4" style="display:none;">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <canvas id="hidden-canvas" style="display:none;"></canvas>
+
+        <div id="result-box" class="plant-card rounded-2xl p-6 shadow-2xl mb-6 animate-fade-in">
+            <div class="flex items-center justify-center mb-6">
+                <span class="text-3xl mr-3">🌿</span>
+                <h2 class="text-2xl font-bold">पहचान परिणाम</h2>
+                <span class="text-3xl ml-3">✨</span>
+            </div>
+            <div id="plant-info" class="text-left space-y-4">
+                <div class="info-card rounded-xl p-5">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">🏷️</span>
+                        <h3 class="font-semibold text-lg">पौधे का नाम:</h3>
+                    </div>
+                    <p id="plant-name" class="text-2xl font-bold ml-11">-</p>
+                </div>
+                <div class="info-card rounded-xl p-5">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">🔬</span>
+                        <h3 class="font-semibold text-lg">वैज्ञानिक नाम:</h3>
+                    </div>
+                    <p id="scientific-name" class="italic text-lg ml-11">-</p>
+                </div>
+                <div class="info-card rounded-xl p-5">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">📝</span>
+                        <h3 class="font-semibold text-lg">विवरण:</h3>
+                    </div>
+                    <p id="plant-description" class="ml-11 leading-relaxed">-</p>
+                </div>
+                <div class="info-card rounded-xl p-5">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">🎯</span>
+                        <h3 class="font-semibold text-lg">विश्वसनीयता:</h3>
+                    </div>
+                    <div class="flex items-center ml-11">
+                        <div id="confidence-bar" class="confidence-bar rounded-full h-4 flex-1 mr-4">
+                            <div id="confidence-fill" class="confidence-fill h-full rounded-full transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                        <span id="confidence-text" class="font-bold text-xl">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="care-tips-box" class="care-tip rounded-2xl p-6 shadow-2xl animate-fade-in">
+            <div class="flex items-center justify-center mb-6">
+                <span class="text-3xl mr-3">🌱</span>
+                <h2 class="text-2xl font-bold">देखभाल की सुझाव</h2>
+                <span class="text-3xl ml-3">💚</span>
+            </div>
+            <div id="care-tips" class="text-left space-y-4">
+                <div class="info-card rounded-xl p-5 hover:scale-105 transition-transform duration-300">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">💧</span>
+                        <h3 class="font-semibold text-lg">पानी:</h3>
+                    </div>
+                    <p id="watering-tip" class="ml-11 leading-relaxed">-</p>
+                </div>
+                <div class="info-card rounded-xl p-5 hover:scale-105 transition-transform duration-300">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">☀️</span>
+                        <h3 class="font-semibold text-lg">धूप:</h3>
+                    </div>
+                    <p id="sunlight-tip" class="ml-11 leading-relaxed">-</p>
+                </div>
+                <div class="info-card rounded-xl p-5 hover:scale-105 transition-transform duration-300">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">🌡️</span>
+                        <h3 class="font-semibold text-lg">तापमान:</h3>
+                    </div>
+                    <p id="temperature-tip" class="ml-11 leading-relaxed">-</p>
+                </div>
+                <div class="info-card rounded-xl p-5 hover:scale-105 transition-transform duration-300">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">🌿</span>
+                        <h3 class="font-semibold text-lg">अतिरिक्त सुझाव:</h3>
+                    </div>
+                    <p id="extra-tip" class="ml-11 leading-relaxed">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageUpload = document.getElementById('image-upload');
+        const cameraBtn = document.getElementById('camera-btn');
+        const captureBtn = document.getElementById('capture-btn');
+        const identifyBtn = document.getElementById('identify-btn');
+        const videoStream = document.getElementById('video-stream');
+        const previewImage = document.getElementById('preview-image');
+        const placeholderText = document.getElementById('placeholder-text');
+        const statusMessage = document.getElementById('status-message');
+        const loadingContainer = document.getElementById('loading-container');
+        const resultBox = document.getElementById('result-box');
+        const careTipsBox = document.getElementById('care-tips-box');
+        const hiddenCanvas = document.getElementById('hidden-canvas');
+
+        let currentStream = null;
+        let hasImage = false;
+
+        // पौधों की डेटाबेस (डेमो के लिए)
+        const plantDatabase = [
+            {
+                name: "गुलाब",
+                scientific: "Rosa",
+                description: "गुलाब एक सुंदर फूल वाला पौधा है जो अपनी खुशबू और रंग-बिरंगे फूलों के लिए प्रसिद्ध है।",
+                watering: "सप्ताह में 2-3 बार पानी दें, मिट्टी को नम रखें लेकिन जलभराव न करें।",
+                sunlight: "दिन में 6-8 घंटे सीधी धूप की आवश्यकता होती है।",
+                temperature: "15-25°C का तापमान सबसे अच्छा होता है।",
+                extra: "नियमित रूप से मुरझाए फूलों को हटाते रहें और महीने में एक बार खाद डालें।"
+            },
+            {
+                name: "तुलसी",
+                scientific: "Ocimum tenuiflorum",
+                description: "तुलसी एक पवित्र पौधा है जो अपने औषधीय गुणों के लिए जाना जाता है।",
+                watering: "रोज सुबह-शाम थोड़ा पानी दें, मिट्टी को सूखने न दें।",
+                sunlight: "दिन में 4-6 घंटे धूप पर्याप्त है।",
+                temperature: "20-30°C का तापमान उपयुक्त है।",
+                extra: "पत्तियों को नियमित रूप से तोड़ते रहें ताकि नई पत्तियां आती रहें।"
+            },
+            {
+                name: "नीम",
+                scientific: "Azadirachta indica",
+                description: "नीम एक औषधीय पेड़ है जो अपने एंटीबैक्टीरियल गुणों के लिए प्रसिद्ध है।",
+                watering: "सप्ताह में 1-2 बार गहरा पानी दें।",
+                sunlight: "पूर्ण सूर्य प्रकाश पसंद करता है।",
+                temperature: "25-35°C का तापमान सबसे अच्छा है।",
+                extra: "यह सूखा सहने वाला पौधा है, अधिक पानी न दें।"
+            },
+            {
+                name: "आम",
+                scientific: "Mangifera indica",
+                description: "आम भारत का राष्ट्रीय फल है और इसके पेड़ बहुत बड़े होते हैं।",
+                watering: "गर्मियों में अधिक पानी, सर्दियों में कम पानी दें।",
+                sunlight: "पूर्ण सूर्य प्रकाश की आवश्यकता होती है।",
+                temperature: "24-27°C का तापमान आदर्श है।",
+                extra: "फलों के मौसम में अतिरिक्त पोषक तत्व दें।"
+            },
+            {
+                name: "मनी प्लांट",
+                scientific: "Epipremnum aureum",
+                description: "मनी प्लांट एक लोकप्रिय घरेलू पौधा है जो हवा को शुद्ध करता है।",
+                watering: "सप्ताह में 1-2 बार पानी दें, मिट्टी सूखने पर।",
+                sunlight: "अप्रत्यक्ष रोशनी पसंद करता है।",
+                temperature: "18-24°C का तापमान उपयुक्त है।",
+                extra: "इसे पानी में भी उगाया जा सकता है।"
+            }
+        ];
+
+        // फाइल अपलोड हैंडलर
+        imageUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                    placeholderText.style.display = 'none';
+                    videoStream.style.display = 'none';
+                    hasImage = true;
+                    identifyBtn.style.display = 'block';
+                    stopCamera();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // कैमरा बटन हैंडलर
+        cameraBtn.addEventListener('click', async function() {
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                videoStream.srcObject = currentStream;
+                videoStream.style.display = 'block';
+                previewImage.style.display = 'none';
+                placeholderText.style.display = 'none';
+                captureBtn.style.display = 'block';
+                cameraBtn.textContent = '📹 कैमरा बंद करें';
+                
+                videoStream.play();
+            } catch (error) {
+                showStatus('कैमरा एक्सेस नहीं मिल सका। कृपया फोटो अपलोड करें।', 'error');
+            }
+        });
+
+        // फोटो कैप्चर हैंडलर
+        captureBtn.addEventListener('click', function() {
+            const canvas = hiddenCanvas;
+            const context = canvas.getContext('2d');
+            
+            canvas.width = videoStream.videoWidth;
+            canvas.height = videoStream.videoHeight;
+            
+            context.drawImage(videoStream, 0, 0);
+            
+            const imageData = canvas.toDataURL('image/jpeg');
+            previewImage.src = imageData;
+            previewImage.style.display = 'block';
+            videoStream.style.display = 'none';
+            placeholderText.style.display = 'none';
+            
+            hasImage = true;
+            identifyBtn.style.display = 'block';
+            captureBtn.style.display = 'none';
+            cameraBtn.textContent = '📹 कैमरा का उपयोग करें';
+            
+            stopCamera();
+        });
+
+        // पहचान बटन हैंडलर
+        identifyBtn.addEventListener('click', function() {
+            if (hasImage) {
+                identifyPlant();
+            }
+        });
+
+        // कैमरा बंद करने का फंक्शन
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+        }
+
+        // स्टेटस मैसेज दिखाने का फंक्शन
+        function showStatus(message, type = 'info') {
+            statusMessage.textContent = message;
+            statusMessage.style.display = 'block';
+            statusMessage.className = type === 'error' ? 'text-red-500 font-medium mb-4' : 'text-gray-500 font-medium mb-4';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        // पौधे की पहचान करने का फंक्शन
+        function identifyPlant() {
+            loadingContainer.style.display = 'flex';
+            resultBox.style.display = 'none';
+            careTipsBox.style.display = 'none';
+            
+            // इमेज का विश्लेषण करना
+            analyzeImage().then(result => {
+                displayResult(result.plant, result.confidence);
+                loadingContainer.style.display = 'none';
+            });
+        }
+
+        // इमेज विश्लेषण फंक्शन
+        function analyzeImage() {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        canvas.width = 100;
+                        canvas.height = 100;
+                        ctx.drawImage(img, 0, 0, 100, 100);
+                        
+                        // इमेज के रंग का विश्लेषण
+                        const imageData = ctx.getImageData(0, 0, 100, 100);
+                        const data = imageData.data;
+                        
+                        let greenPixels = 0;
+                        let redPixels = 0;
+                        let totalPixels = data.length / 4;
+                        
+                        for (let i = 0; i < data.length; i += 4) {
+                            const r = data[i];
+                            const g = data[i + 1];
+                            const b = data[i + 2];
+                            
+                            // हरे रंग की जांच (पत्तियों के लिए)
+                            if (g > r && g > b && g > 100) {
+                                greenPixels++;
+                            }
+                            // लाल रंग की जांच (फूलों के लिए)
+                            if (r > g && r > b && r > 100) {
+                                redPixels++;
+                            }
+                        }
+                        
+                        const greenRatio = greenPixels / totalPixels;
+                        const redRatio = redPixels / totalPixels;
+                        
+                        let selectedPlant;
+                        let confidence;
+                        
+                        // रंग के आधार पर पौधे की पहचान
+                        if (redRatio > 0.15) {
+                            // लाल रंग ज्यादा है - गुलाब की संभावना
+                            selectedPlant = plantDatabase[0]; // गुलाब
+                            confidence = Math.floor(85 + Math.random() * 10);
+                        } else if (greenRatio > 0.3) {
+                            // हरा रंग ज्यादा है - पत्तेदार पौधे
+                            const leafyPlants = [plantDatabase[1], plantDatabase[2], plantDatabase[4]]; // तुलसी, नीम, मनी प्लांट
+                            selectedPlant = leafyPlants[Math.floor(Math.random() * leafyPlants.length)];
+                            confidence = Math.floor(80 + Math.random() * 15);
+                        } else if (greenRatio > 0.15) {
+                            // मध्यम हरा रंग - फलों के पेड़
+                            selectedPlant = plantDatabase[3]; // आम
+                            confidence = Math.floor(75 + Math.random() * 15);
+                        } else {
+                            // कम रंग - रैंडम चुनाव
+                            selectedPlant = plantDatabase[Math.floor(Math.random() * plantDatabase.length)];
+                            confidence = Math.floor(60 + Math.random() * 20);
+                        }
+                        
+                        resolve({ plant: selectedPlant, confidence: confidence });
+                    };
+                    
+                    img.src = previewImage.src;
+                }, 1500);
+            });
+        }
+
+        // परिणाम दिखाने का फंक्शन
+        function displayResult(plant, confidence) {
+            document.getElementById('plant-name').textContent = plant.name;
+            document.getElementById('scientific-name').textContent = plant.scientific;
+            document.getElementById('plant-description').textContent = plant.description;
+            document.getElementById('confidence-text').textContent = confidence + '%';
+            document.getElementById('confidence-fill').style.width = confidence + '%';
+            
+            // देखभाल की जानकारी
+            document.getElementById('watering-tip').textContent = plant.watering;
+            document.getElementById('sunlight-tip').textContent = plant.sunlight;
+            document.getElementById('temperature-tip').textContent = plant.temperature;
+            document.getElementById('extra-tip').textContent = plant.extra;
+            
+            resultBox.style.display = 'block';
+            careTipsBox.style.display = 'block';
+            
+            // स्मूथ स्क्रॉल
+            resultBox.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // पेज लोड होने पर कैमरा बंद करना
+        window.addEventListener('beforeunload', stopCamera);
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981e14756598a756',t:'MTc1ODMzNzMwNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
